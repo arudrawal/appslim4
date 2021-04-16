@@ -4,9 +4,9 @@
 	$dbc = new DbCommand();
 	
 	$dbc->checkForceError(); // fail if not safe.
-   
+   	$dbserver = getenv('DB_SERVER');
 	$dbname = getenv('DB_NAME');
-	$conn = $dbc->getDbcon(null);
+	$conn = $dbc->getDbcon(null);// do not select db
 	if ($conn) {
 		try {
 			$retval = $conn->query( "CREATE Database IF NOT EXISTS $dbname" );
@@ -14,6 +14,6 @@
 			die($e->getMessage());
 		}
 	}
-	echo "Database created successfully: $dbname\n";
+	echo "Database created successfully: $dbname@$dbserver\n";
 	$conn->close();
 ?>

@@ -18,13 +18,16 @@ class DbCommand {
 		   }
 		}
 	}
-	public function displayEnv() {
-		return getenv('PRODUCTION') ? 'Production' : 'Development';
+	public function displayServerDb() {
+		//return getenv('PRODUCTION') ? 'Production' : 'Development';
+		return getenv('DB_SERVER').':'. getenv('DB_NAME');
 	}
-	public function getDbcon($dbname=null) {
+	// Most cases schema is selected with connection.
+	// Exception is when creating/deleing schema itself.
+	public function getDbcon($sel_schema=true) {
 		if (!$this->dbcon) {
 			$dbserver = getenv('DB_SERVER');
-			//$dbname = getenv('DB_NAME');
+			$dbname = $sel_schema ? getenv('DB_NAME') : null;
 			try {
 				$this->dbcon = new mysqli($dbserver, getenv('DB_USER'), getenv('DB_PASS'),$dbname);
 			} catch (Exception $e) {
@@ -35,12 +38,24 @@ class DbCommand {
 		}
 		return $this->dbcon;
 	}
-	public function query($cmd) {
+	// in case we need connect and select in two steps
+	public function select_db() {
 		$conn = $dbc->getDbcon();
 		if ($conn) {
-			if ($conn->select_db(getenv('DB_NAME'))) {
-				return $conn->query($cmd);
-			}
+			$conn->select_db(getenv('DB_NAME'));
+		}
+	}
+	public function query($cmd) {
+		$conn = $this->getDbcon();
+		if ($conn) {
+			return $conn->query($cmd);
+		}
+		return false;
+	}
+	public function getError() {
+		$conn = $this->getDbcon();
+		if ($conn) {
+			return $conn->error;
 		}
 		return false;
 	}

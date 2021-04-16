@@ -17,23 +17,23 @@
 -- updated_ts_gmt = store as miliseconds (MySql needs to BIGINT)
 -- updated_gmt_offset = Store GMT offset in miliseconds (MySql needs to BIGINT).
 
-BEGIN TRANSACTION;
+START TRANSACTION;
 
 -- Audit log stores changes to table->column.
 -- Each log needs a unique id - this can be only stored in server side
 -- We may not be concerned about the changes in a local sandbox.
 -- We implement entry in this table on server side - when changes are received.
 CREATE TABLE `audit_log` (
-  `audit_log_uuid` 		TEXT,
+  `audit_log_uuid` 		VARCHAR(32),
   `table_name`          TEXT,
   `column_name` 		TEXT,
   `old_value`           TEXT,
   `new_value`           TEXT,
-  `created_by_user`     TEXT,
+  `created_by_user`     VARCHAR(64),
   `updated_ts_gmt` 		INTEGER DEFAULT 0,
   `updated_gmt_offset` 	INTEGER DEFAULT 0,
-  `updated_by_user`     TEXT,
-  `updated_by_client_uuid`     TEXT,
+  `updated_by_user`     VARCHAR(64),
+  `updated_by_client_uuid`     VARCHAR(32),
   `updated_date_time` 	TEXT,
   `updated_comment`     TEXT,
   `version_date_time`		TEXT,
@@ -47,7 +47,7 @@ CREATE TABLE `audit_log` (
 -- This table is only uploaded from device, not shared with other
 -- devices in the group.
 --CREATE TABLE `client_device_log` (
---  `client_device_uuid` 		TEXT,
+--  `client_device_uuid` 		VARCHAR(32),
 --  `updated_ts_gmt` 		INTEGER,
 --  `updated_date_time` 	TEXT,
 --  `device_info` 		TEXT,
@@ -68,7 +68,7 @@ CREATE TABLE `audit_log` (
 -- This table should not have any key.
 -- Date/Time format : yyyy-MM-dd'T'HH:mm:ss.SSSZ 1969-12-31T16:00:00.000-0800
 CREATE TABLE `client_syslog` (
-  `client_device_uuid` 	TEXT,
+  `client_device_uuid` 	VARCHAR(32),
   `updated_ts_gmt`		INTEGER,
   `updated_date_time` 	TEXT,
   `priority` 			INTEGER,
@@ -85,28 +85,28 @@ CREATE TABLE `client_syslog` (
 -- Investigator: Add/edit Subject (1), Add Visit(2), View Forms(3), Edit Forms(), Record Audio(4),
 --               Play Audio(), Record Video(6), Play Video (), AnswerQ(7)
 -- AssignReview(8),ReviewVisitAskQSignOff(9)
-CREATE TABLE `cta_activities` (
-	`activity_num`			INTEGER,
-	`description`		        TEXT,
-	`version_date_time`			TEXT,
-	`version_number`			INTEGER DEFAULT 1,
-	PRIMARY KEY(activity_num)
-);
+--CREATE TABLE `cta_activities` (
+--	`activity_num`			INTEGER,
+--	`description`		        TEXT,
+--	`version_date_time`			TEXT,
+--	`version_number`			INTEGER DEFAULT 1,
+--	PRIMARY KEY(activity_num)
+--);
 
 -- Field: form_num=2, form_section'panss.html' form_qnum=1, description=were you ever depressed ...?
 -- type: boolean (yes/no), number, entry-text.
 -- Needed to show logs with question reference.
 CREATE TABLE `cta_available_form_question` (
 	`form_num`			INTEGER,
-	`form_section`	    TEXT,
+	`form_section`	    VARCHAR(64),
 	`form_qnum`			INTEGER,
 	`qlabel`			TEXT,
 	`qtext`		        TEXT,
 	`ans_type`			TEXT,
 	`updated_ts_gmt`			INTEGER DEFAULT 0,
 	`updated_gmt_offset`		INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
     `version_date_time`		    TEXT,
     `version_number`			INTEGER DEFAULT 1,
@@ -117,13 +117,13 @@ CREATE TABLE `cta_available_form_question` (
 -- section_file='panss.html' - proper section display in log.
 CREATE TABLE `cta_available_form_section` (
 	`form_num`			INTEGER,
-	`form_section`	    TEXT,
+	`form_section`	    VARCHAR(64),
 	`name`	            TEXT,
 	`description`		TEXT,
 	`updated_ts_gmt`			INTEGER DEFAULT 0,
 	`updated_gmt_offset`		INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
     `version_date_time`		TEXT,
     `version_number`			INTEGER DEFAULT 1,
@@ -140,8 +140,8 @@ CREATE TABLE `cta_available_forms` (
 	`prereq_form_list`	TEXT,
 	`updated_ts_gmt`			INTEGER DEFAULT 0,
 	`updated_gmt_offset`		INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
     `version_date_time`		TEXT,
     `version_number`			INTEGER DEFAULT 1,
@@ -157,8 +157,8 @@ CREATE TABLE `cta_country` (
 	`country_name`		TEXT,
 	`updated_ts_gmt`			INTEGER DEFAULT 0,
 	`updated_gmt_offset`		INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
     `version_date_time`		TEXT,
     `version_number`			INTEGER DEFAULT 1,
@@ -183,20 +183,20 @@ CREATE TABLE `cta_country` (
 --  like: how much time a scale usually takes.
 -- review_status - is unused field.
 CREATE TABLE `cta_form_data` (
-	`subject_uuid`				TEXT,
-	`subject_visit_uuid`		TEXT,
+	`subject_uuid`				VARCHAR(32),
+	`subject_visit_uuid`		VARCHAR(32),
 	`form_num`					INTEGER,
-	`form_section`			    TEXT,
+	`form_section`			    VARCHAR(64),
 	`form_qnum`					INTEGER,
 	`form_data_ans`				TEXT,
 	`form_data_note`			TEXT,		
 	`review_status`				TEXT,
-	`media_file_name`			TEXT,
+	`media_file_name`			VARCHAR(128),
 	`media_time_offset`			INTEGER DEFAULT 0,
 	`updated_ts_gmt`			INTEGER DEFAULT 0,
 	`updated_gmt_offset`		INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
 	`updated_comment`			TEXT,
     `version_date_time`		    TEXT,
@@ -211,20 +211,20 @@ CREATE TABLE `cta_form_data` (
 -- to any question.
 --review_status-unused filed came as-is from data.
 CREATE TABLE `cta_form_data_history` (
-	`subject_uuid`				TEXT,
-	`subject_visit_uuid`		TEXT,
+	`subject_uuid`				VARCHAR(32),
+	`subject_visit_uuid`		VARCHAR(32),
 	`form_num`					INTEGER,
-	`form_section`				TEXT,
+	`form_section`				VARCHAR(64),
 	`form_qnum`					INTEGER,
 	`form_data_ans`				TEXT,
 	`form_data_note`			TEXT,
 	`review_status`				TEXT,		
-	`media_file_name`			TEXT,
+	`media_file_name`			VARCHAR(128),
 	`media_time_offset`			INTEGER DEFAULT 0,
 	`updated_ts_gmt`			INTEGER DEFAULT 0,
 	`updated_gmt_offset`		INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
 	`updated_comment`			TEXT,
     `version_date_time`		    TEXT,
@@ -247,25 +247,25 @@ CREATE TABLE `cta_form_data_history` (
 -- change of answer by investigator and eventually
 -- Review completed by reviewer. 
 CREATE TABLE `cta_form_data_query` (
-	`subject_uuid`				TEXT,
+	`subject_uuid`				VARCHAR(32),
 	`subject_visit_uuid`		INTEGER,
 	`form_num`					INTEGER,
-	`form_section`				TEXT,
+	`form_section`				VARCHAR(64),
 	`form_qnum`					INTEGER,			
 	`form_query`				TEXT,
 	`user_code_reviewer`		VARCHAR(64),
 	`query_ts_gmt`				INTEGER,	
 	`query_date_time`			TEXT,	
-	`query_client_uuid`			TEXT,
+	`query_client_uuid`			VARCHAR(32),
 	`form_reply`				TEXT,
-	`reply_by_user`				TEXT,	
+	`reply_by_user`				VARCHAR(64),
 	`reply_ts_gmt`				INTEGER DEFAULT 0,	
 	`reply_date_time`			TEXT,	
-	`reply_client_uuid`			TEXT,
+	`reply_client_uuid`			VARCHAR(32),
 	`updated_ts_gmt`			INTEGER DEFAULT 0,
 	`updated_gmt_offset`		INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
     `version_date_time`		    TEXT,
     `version_number`			INTEGER DEFAULT 1,
@@ -283,10 +283,10 @@ CREATE TABLE `cta_form_data_query` (
 -- review_status - per question question basis - may be not required.
 -- question status will be agree/disagree - can be derived by comparision.
 CREATE TABLE `cta_form_data_review` (
-	`subject_uuid`				TEXT,
-	`subject_visit_uuid`		TEXT,
+	`subject_uuid`				VARCHAR(32),
+	`subject_visit_uuid`		VARCHAR(32),
 	`form_num`					INTEGER,
-	`form_section`				TEXT,
+	`form_section`				VARCHAR(64),
 	`form_qnum`					INTEGER,
 	`user_code_reviewer`		VARCHAR(64),
 	`form_data_ans`				TEXT,
@@ -294,8 +294,8 @@ CREATE TABLE `cta_form_data_review` (
 	`review_status`			    TEXT,
 	`updated_ts_gmt`			INTEGER DEFAULT 0,
 	`updated_gmt_offset`		INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
     `version_date_time`		TEXT,
     `version_number`			INTEGER DEFAULT 1,
@@ -312,17 +312,17 @@ CREATE TABLE `cta_form_data_review` (
 -- file_uploaded - uploaded to server - used for automatic upload.
 --                 and allow us to control delete/upload actions.
 CREATE TABLE `cta_form_media` (
-	`subject_uuid`				TEXT,
-	`subject_visit_uuid`		TEXT,
+	`subject_uuid`				VARCHAR(32),
+	`subject_visit_uuid`		VARCHAR(32),
 	`form_num`					INTEGER,
-	`media_file_name`			TEXT,
+	`media_file_name`			VARCHAR(128),
 	`start_ts_gmt`				INTEGER DEFAULT 0,
 	`end_ts_gmt`				INTEGER DEFAULT 0,
 	`file_uploaded`				INTEGER DEFAULT 0,
 	`updated_ts_gmt`			INTEGER DEFAULT 0,
 	`updated_gmt_offset`		INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
     `version_date_time`			TEXT,
     `version_number`			INTEGER DEFAULT 1,
@@ -333,14 +333,14 @@ CREATE TABLE `cta_form_media` (
 -- T13 Monitor review form for completeness
 --
 CREATE TABLE `cta_form_monitor` (
-	`subject_uuid`				TEXT,
-	`subject_visit_uuid`		TEXT,
+	`subject_uuid`				VARCHAR(32),
+	`subject_visit_uuid`		VARCHAR(32),
 	`form_num`					INTEGER,
 	`monitor_status`			TEXT,
 	`updated_ts_gmt`			INTEGER DEFAULT 0,
 	`updated_gmt_offset`		INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
 	`updated_comment`			TEXT,
     `version_date_time`		TEXT,
@@ -356,15 +356,15 @@ CREATE TABLE `cta_form_monitor` (
 -- Multiple reviews are possible for a form, reviewer is also part of the key.
 --
 CREATE TABLE `cta_form_review` (
-	`subject_uuid`				    TEXT,
-	`subject_visit_uuid`			TEXT,
+	`subject_uuid`				    VARCHAR(32),
+	`subject_visit_uuid`			VARCHAR(32),
 	`form_num`					    INTEGER,
 	`user_code_reviewer`	        VARCHAR(64),
 	`form_status_num`			    INTEGER DEFAULT 4,
 	`updated_ts_gmt`			INTEGER DEFAULT 0,
 	`updated_gmt_offset`		INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
 	`updated_comment`			TEXT,
     `version_date_time`		TEXT,
@@ -380,8 +380,8 @@ CREATE TABLE `cta_form_status` (
 	`description`			TEXT,
 	`updated_ts_gmt`			INTEGER DEFAULT 0,
 	`updated_gmt_offset`		INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
     `version_date_time`		TEXT,
     `version_number`			INTEGER DEFAULT 1,
@@ -395,8 +395,8 @@ CREATE TABLE `cta_language` (
 	`description`	        TEXT,
 	`updated_ts_gmt`			INTEGER DEFAULT 0,
 	`updated_gmt_offset`		INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
     `version_date_time`		TEXT,
     `version_number`		INTEGER DEFAULT 1,
@@ -410,8 +410,8 @@ CREATE TABLE `cta_map_study_site` (
 	`site_num`				INTEGER,
 	`updated_ts_gmt`		INTEGER,
 	`updated_gmt_offset`	INTEGER,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
     `version_date_time`		    TEXT,
     `version_number`			INTEGER DEFAULT 1,
@@ -420,7 +420,7 @@ CREATE TABLE `cta_map_study_site` (
 --
 -- user-study-role-map - created by server and user by clients.
 -- role_blinded - user not aware of
-CREATE TABLE `cta_map_user_study_role` (
+/* CREATE TABLE `cta_map_user_study_role` (
     `user_code`				VARCHAR(64),
 	`study_num`				INTEGER,
 	`role_num`				INTEGER,
@@ -429,13 +429,13 @@ CREATE TABLE `cta_map_user_study_role` (
 	`record_lock`			INTEGER DEFAULT 0,
 	`updated_ts_gmt`		INTEGER,
 	`updated_gmt_offset`	INTEGER,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
     `version_date_time`		    TEXT,
     `version_number`			INTEGER DEFAULT 1,
 	PRIMARY KEY			(user_code, study_num, role_num)
-);
+); */
 -- user-study-site-map - created by server and user by clients.
 -- record_lock: 0=read-write, 1=read-only, 2=no-access
 CREATE TABLE `cta_map_user_study_site` (
@@ -445,8 +445,8 @@ CREATE TABLE `cta_map_user_study_site` (
 	`record_lock`		INTEGER DEFAULT 0,
 	`updated_ts_gmt`	INTEGER,
 	`updated_gmt_offset`	INTEGER,
-	`updated_by_user`		TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`		VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`		    TEXT,
     `version_date_time`		    TEXT,
     `version_number`			INTEGER DEFAULT 1,
@@ -463,8 +463,8 @@ CREATE TABLE `cta_password` (
 	`autogen_flag`		INTEGER DEFAULT 0,
 	`updated_ts_gmt`		INTEGER DEFAULT 0,
 	`updated_gmt_offset`	INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT DEFAULT NULL,
-	`updated_by_client_uuid`	TEXT DEFAULT NULL,
+	`updated_by_user`			VARCHAR(64) DEFAULT NULL,
+	`updated_by_client_uuid`	VARCHAR(32) DEFAULT NULL,
 	`updated_date_time`			TEXT DEFAULT NULL,
     `version_date_time`		    TEXT DEFAULT NULL,
     `version_number`			INTEGER DEFAULT 1,
@@ -484,8 +484,8 @@ CREATE TABLE `cta_password_history` (
     `autogen_flag`		INTEGER,
     `updated_ts_gmt`		INTEGER DEFAULT 0,
     `updated_gmt_offset`	INTEGER DEFAULT 0,
-    `updated_by_user`			TEXT,
-    `updated_by_client_uuid`	TEXT,
+    `updated_by_user`			VARCHAR(64),
+    `updated_by_client_uuid`	VARCHAR(32),
     `updated_date_time`			TEXT,
     `version_date_time`		    TEXT,
     `version_number`			INTEGER DEFAULT 1,
@@ -509,8 +509,8 @@ CREATE TABLE `cta_policy`
 	`description`       TEXT,
 	`updated_ts_gmt`			INTEGER DEFAULT 0,
 	`updated_gmt_offset`		INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
     `version_date_time`		TEXT,
     `version_number`			INTEGER DEFAULT 1,
@@ -554,8 +554,8 @@ CREATE TABLE `cta_protocol` (
 	`description`		TEXT,
 	`updated_ts_gmt`		INTEGER DEFAULT 0,
 	`updated_gmt_offset`	INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
     `version_date_time`		TEXT,
     `version_number`			INTEGER DEFAULT 1,
@@ -569,8 +569,8 @@ CREATE TABLE `cta_protocol_form` (
 	`protocol_form_order_num`	INTEGER,
 	`updated_ts_gmt`			INTEGER,
 	`updated_gmt_offset`		INTEGER,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
 	`version_date_time`			TEXT,
 	`version_number`			INTEGER DEFAULT 1,
@@ -589,11 +589,11 @@ CREATE TABLE `cta_protocol_rule` (
 	`protocol_rule`		TEXT,
 	`protocol_rule_value`	TEXT,
 	`protocol_rule_desc`		TEXT,
-	`created_by_user`		TEXT,
+	`created_by_user`		VARCHAR(64),
 	`updated_ts_gmt`			INTEGER DEFAULT 0,
 	`updated_gmt_offset`		INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
 	`updated_comment`			TEXT,
 	`version_date_time`			TEXT,
@@ -610,11 +610,11 @@ CREATE TABLE `cta_protocol_screening_question`
 	`question_category`     TEXT,
 	`question`              TEXT,
 	`question_data_type`    TEXT
-	`created_by_user`		TEXT,
+	`created_by_user`		VARCHAR(64),
 	`updated_ts_gmt`			INTEGER DEFAULT 0,
 	`updated_gmt_offset`		INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
 	`updated_comment`			TEXT,
 	`version_date_time`			TEXT,
@@ -657,8 +657,8 @@ CREATE TABLE `cta_protocol_visit` (
 	`time_unit`					TEXT,
 	`updated_ts_gmt`			INTEGER DEFAULT 0,
 	`updated_gmt_offset`		INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
 	`version_date_time`			TEXT,
 	`version_number`			INTEGER DEFAULT 1,
@@ -684,8 +684,8 @@ CREATE TABLE `cta_role` (
 	`description`	    TEXT,
 	`updated_ts_gmt`		INTEGER DEFAULT 0,
 	`updated_gmt_offset`	INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
 	`version_date_time`			TEXT,
 	`version_number`			INTEGER DEFAULT 1,
@@ -719,8 +719,8 @@ CREATE TABLE `cta_site` (
 	`email`			TEXT,
 	`updated_ts_gmt`		INTEGER DEFAULT 0,
 	`updated_gmt_offset`	INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
 	`version_date_time`			TEXT,
 	`version_number`			INTEGER DEFAULT 1,
@@ -758,8 +758,8 @@ CREATE TABLE `cta_sponsor_contact` (
   `email2` 	        TEXT,
   `updated_ts_gmt`			INTEGER DEFAULT 0,
   `updated_gmt_offset`		INTEGER DEFAULT 0,
-  `updated_by_user`			TEXT,
-  `updated_by_client_uuid`	TEXT,
+  `updated_by_user`			VARCHAR(64),
+  `updated_by_client_uuid`	VARCHAR(32),
   `updated_date_time`		TEXT,
   `version_date_time`		TEXT,
   `version_number`			INTEGER DEFAULT 1,
@@ -794,8 +794,8 @@ CREATE TABLE `cta_study` (
 	`end_date`			TEXT,	
 	`updated_ts_gmt`	INTEGER DEFAULT 0,
 	`updated_gmt_offset`		INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
 	`version_date_time`			TEXT,
 	`version_number`			INTEGER DEFAULT 1,
@@ -808,8 +808,8 @@ CREATE TABLE `cta_study_status` (
 	`description`			TEXT,
 	`updated_ts_gmt`			INTEGER DEFAULT 0,
 	`updated_gmt_offset`		INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
 	`version_date_time`			TEXT,
 	`version_number`			INTEGER DEFAULT 1,
@@ -820,7 +820,7 @@ CREATE TABLE `cta_study_status` (
 --  Study->Country->Site->subject_num.
 -- server should calculate subject code
 CREATE TABLE `cta_subject` (
-	`subject_uuid`			TEXT NOT NULL,
+	`subject_uuid`			VARCHAR(32) NOT NULL,
 	`study_num`				INTEGER DEFAULT 0,
 	`country_num`			INTEGER DEFAULT 0,
 	`site_num`				INTEGER DEFAULT 0,
@@ -842,11 +842,11 @@ CREATE TABLE `cta_subject` (
 	`subject_status_num`	INTEGER DEFAULT 0,
 	`record_lock`			INTEGER DEFAULT 0,
 
-	`created_by_user`		TEXT DEFAULT NULL,
+	`created_by_user`		VARCHAR(64) DEFAULT NULL,
 	`updated_ts_gmt`		INTEGER DEFAULT 0,
 	`updated_gmt_offset`	INTEGER DEFAULT 0,
-	`updated_by_user`		TEXT DEFAULT NULL,
-	`updated_by_client_uuid`	TEXT DEFAULT NULL,
+	`updated_by_user`		VARCHAR(64) DEFAULT NULL,
+	`updated_by_client_uuid`	VARCHAR(32) DEFAULT NULL,
 	`updated_date_time`			TEXT DEFAULT NULL,
 	`updated_comment`			TEXT DEFAULT NULL,
 
@@ -863,8 +863,8 @@ CREATE TABLE `cta_subject` (
 -- We need to derive visit start time to predict date for future visits.
 --
 CREATE TABLE `cta_subject_form` (
-	`subject_uuid`				TEXT,
-	`subject_visit_uuid`		TEXT,
+	`subject_uuid`				VARCHAR(32),
+	`subject_visit_uuid`		VARCHAR(32),
 	`form_num`					INTEGER DEFAULT 0,
 	`subject_form_order_num`	INTEGER DEFAULT 0,
 	`study_num`                 INTEGER DEFAULT 0,
@@ -873,8 +873,8 @@ CREATE TABLE `cta_subject_form` (
 	`form_owner_updated_ts_gmt`		INTEGER DEFAULT 0,
 	`updated_ts_gmt`			INTEGER DEFAULT 0,
 	`updated_gmt_offset`		INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT DEFAULT NULL,
-	`updated_by_client_uuid`	TEXT DEFAULT NULL,
+	`updated_by_user`			VARCHAR(64) DEFAULT NULL,
+	`updated_by_client_uuid`	VARCHAR(32) DEFAULT NULL,
 	`updated_date_time`			TEXT DEFAULT NULL,
 	`updated_comment`			TEXT DEFAULT NULL,
 	`version_date_time`			TEXT DEFAULT NULL,
@@ -883,7 +883,7 @@ CREATE TABLE `cta_subject_form` (
 	);
 -- Table-36
 CREATE TABLE `cta_subject_history` (
-	`subject_uuid`			TEXT NOT NULL,
+	`subject_uuid`			VARCHAR(32) NOT NULL,
 	`study_num`				INTEGER DEFAULT 0,
 	`country_num`			INTEGER DEFAULT 0,
 	`site_num`				INTEGER DEFAULT 0,
@@ -905,11 +905,11 @@ CREATE TABLE `cta_subject_history` (
 	`subject_status_num`	INTEGER DEFAULT 0,
 	`record_lock`			INTEGER DEFAULT 0,
 
-	`created_by_user`		TEXT DEFAULT NULL,
+	`created_by_user`		VARCHAR(64) DEFAULT NULL,
 	`updated_ts_gmt`		INTEGER DEFAULT 0,
 	`updated_gmt_offset`	INTEGER DEFAULT 0,
-	`updated_by_user`		TEXT DEFAULT NULL,
-	`updated_by_client_uuid`	TEXT DEFAULT NULL,
+	`updated_by_user`		VARCHAR(64) DEFAULT NULL,
+	`updated_by_client_uuid`	VARCHAR(32) DEFAULT NULL,
 	`updated_date_time`			TEXT DEFAULT NULL,
 	`updated_comment`			TEXT DEFAULT NULL,
 
@@ -928,11 +928,11 @@ CREATE TABLE `cta_subject_screening_answer`
 	protocol_screening_qnum INTEGER,
 	protocol_num INTEGER,
 	answer TEXT,
-	`created_by_user`		TEXT,
+	`created_by_user`		VARCHAR(64),
 	`updated_ts_gmt`		INTEGER DEFAULT 0,
 	`updated_gmt_offset`	INTEGER DEFAULT 0,
-	`updated_by_user`		TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`		VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
 	`updated_comment`			TEXT,
 	`version_date_time`			TEXT,
@@ -947,8 +947,8 @@ CREATE TABLE `cta_subject_status` (
 	`description`			TEXT,
 	`updated_ts_gmt`			INTEGER DEFAULT 0,
 	`updated_gmt_offset`		INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
 	`version_date_time`			TEXT,
 	`version_number`			INTEGER DEFAULT 1,
@@ -965,8 +965,8 @@ CREATE TABLE `cta_subject_status` (
 -- subject_visit_uuid: must be assigned by the device record is added.
 -- subject_visit_num: a serial number calculated by server.
 CREATE TABLE `cta_subject_visit` (
-	`subject_uuid`				TEXT NOT NULL,
-	`subject_visit_uuid`		TEXT NOT NULL,
+	`subject_uuid`				VARCHAR(32) NOT NULL,
+	`subject_visit_uuid`		VARCHAR(32) NOT NULL,
 	`subject_visit_num`			INTEGER DEFAULT 0,
 	`visit_serial_num`			INTEGER DEFAULT 0,
 
@@ -981,8 +981,8 @@ CREATE TABLE `cta_subject_visit` (
 
 	`updated_ts_gmt`			INTEGER DEFAULT 0,
 	`updated_gmt_offset`		INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
 	`updated_comment`			TEXT,
 	`version_date_time`			TEXT,
@@ -1002,7 +1002,7 @@ CREATE TABLE `cta_subject_visit` (
 --
 --CREATE TABLE `cta_subject_form_review` (
 --	`subject_uuid`				TEXT,
---	`subject_visit_uuid`		TEXT,
+--	`subject_visit_uuid`		VARCHAR(32),
 --	`form_num`					INTEGER,
 --	`subject_form_order_num`	INTEGER,
 --	`assigned_to`		        TEXT, // reviewer user-code
@@ -1042,8 +1042,8 @@ CREATE TABLE `cta_user` (
 	`language`		TEXT,
 	`updated_ts_gmt`		INTEGER DEFAULT 0,
 	`updated_gmt_offset`	INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
 	`updated_comment`	TEXT,
 	`version_date_time`			TEXT,
@@ -1057,8 +1057,8 @@ CREATE TABLE `cta_user_language` (
 	`lang_num`		INTEGER,
 	`updated_ts_gmt`			INTEGER DEFAULT 0,
 	`updated_gmt_offset`		INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
 	`version_date_time`			TEXT,
 	`version_number`			INTEGER DEFAULT 1,
@@ -1079,8 +1079,8 @@ CREATE TABLE `cta_user_language` (
 -- individual form review status is summarized to calculate visit status.
 -- Review_mode: 0: normal-QA, 1=Open-opinion, 2-Blinded opinion.
 CREATE TABLE `cta_visit_review` (
-	`subject_uuid`				TEXT,
-	`subject_visit_uuid`		TEXT,
+	`subject_uuid`				VARCHAR(32),
+	`subject_visit_uuid`		VARCHAR(32),
 	`user_code_reviewer`	    VARCHAR(64),
 	`review_mode`	        	INTEGER DEFAULT 0,
 
@@ -1088,15 +1088,15 @@ CREATE TABLE `cta_visit_review` (
 	`protocol_num`		        INTEGER,
 	`protocol_visit_num`		INTEGER,
 
-	`assigned_by_user`	        TEXT,
+	`assigned_by_user`	        VARCHAR(64),
 	`assigned_ts_gmt`	        INTEGER DEFAULT 0,
 	`assignment_accepted`	    TEXT,
 	`accepted_ts_gmt`	        INTEGER DEFAULT 0,
 
 	`updated_ts_gmt`			INTEGER DEFAULT 0,
 	`updated_gmt_offset`		INTEGER DEFAULT 0,
-	`updated_by_user`			TEXT,
-	`updated_by_client_uuid`	TEXT,
+	`updated_by_user`			VARCHAR(64),
+	`updated_by_client_uuid`	VARCHAR(32),
 	`updated_date_time`			TEXT,
 	`updated_comment`			TEXT,
 
