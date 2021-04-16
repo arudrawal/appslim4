@@ -17,7 +17,7 @@
 -- updated_ts_gmt = store as miliseconds (MySql needs to BIGINT)
 -- updated_gmt_offset = Store GMT offset in miliseconds (MySql needs to BIGINT).
 
-START TRANSACTION;
+-- START TRANSACTION;
 
 -- Audit log stores changes to table->column.
 -- Each log needs a unique id - this can be only stored in server side
@@ -25,7 +25,7 @@ START TRANSACTION;
 -- We implement entry in this table on server side - when changes are received.
 CREATE TABLE `audit_log` (
   `audit_log_uuid` 		VARCHAR(32),
-  `table_name`          TEXT,
+  `table_name`          VARCHAR(128),
   `column_name` 		TEXT,
   `old_value`           TEXT,
   `new_value`           TEXT,
@@ -85,13 +85,13 @@ CREATE TABLE `client_syslog` (
 -- Investigator: Add/edit Subject (1), Add Visit(2), View Forms(3), Edit Forms(), Record Audio(4),
 --               Play Audio(), Record Video(6), Play Video (), AnswerQ(7)
 -- AssignReview(8),ReviewVisitAskQSignOff(9)
---CREATE TABLE `cta_activities` (
---	`activity_num`			INTEGER,
---	`description`		        TEXT,
---	`version_date_time`			TEXT,
---	`version_number`			INTEGER DEFAULT 1,
---	PRIMARY KEY(activity_num)
---);
+CREATE TABLE `cta_activities` (
+	`activity_num`			INTEGER,
+	`description`		        TEXT,
+	`version_date_time`			TEXT,
+	`version_number`			INTEGER DEFAULT 1,
+	PRIMARY KEY(activity_num)
+);
 
 -- Field: form_num=2, form_section'panss.html' form_qnum=1, description=were you ever depressed ...?
 -- type: boolean (yes/no), number, entry-text.
@@ -420,7 +420,7 @@ CREATE TABLE `cta_map_study_site` (
 --
 -- user-study-role-map - created by server and user by clients.
 -- role_blinded - user not aware of
-/* CREATE TABLE `cta_map_user_study_role` (
+CREATE TABLE `cta_map_user_study_role` (
     `user_code`				VARCHAR(64),
 	`study_num`				INTEGER,
 	`role_num`				INTEGER,
@@ -435,7 +435,7 @@ CREATE TABLE `cta_map_study_site` (
     `version_date_time`		    TEXT,
     `version_number`			INTEGER DEFAULT 1,
 	PRIMARY KEY			(user_code, study_num, role_num)
-); */
+);
 -- user-study-site-map - created by server and user by clients.
 -- record_lock: 0=read-write, 1=read-only, 2=no-access
 CREATE TABLE `cta_map_user_study_site` (
@@ -609,7 +609,7 @@ CREATE TABLE `cta_protocol_screening_question`
 	`protocol_num`		    INTEGER,
 	`question_category`     TEXT,
 	`question`              TEXT,
-	`question_data_type`    TEXT
+	`question_data_type`    TEXT,
 	`created_by_user`		VARCHAR(64),
 	`updated_ts_gmt`			INTEGER DEFAULT 0,
 	`updated_gmt_offset`		INTEGER DEFAULT 0,
@@ -909,7 +909,7 @@ CREATE TABLE `cta_subject_history` (
 	`updated_ts_gmt`		INTEGER DEFAULT 0,
 	`updated_gmt_offset`	INTEGER DEFAULT 0,
 	`updated_by_user`		VARCHAR(64) DEFAULT NULL,
-	`updated_by_client_uuid`	VARCHAR(32) DEFAULT NULL,
+	`updated_by_client_uuid`	VARCHAR(32) DEFAULT '',
 	`updated_date_time`			TEXT DEFAULT NULL,
 	`updated_comment`			TEXT DEFAULT NULL,
 
@@ -1118,8 +1118,8 @@ CREATE TABLE `cta_visit_review` (
 -- if up-sync is completed receive all changes for table and update original table and remove
 -- cached copy.
 CREATE TABLE `cta_local_cache` (
-	`pkey`		        TEXT NOT NULL,
-	`table_name`		TEXT,
+	`pkey`		        VARCHAR(255) NOT NULL,
+	`table_name`		VARCHAR(128),
 	`key_1`		        TEXT,
 	`key_2`		        TEXT,
 	`key_3`		        TEXT,
@@ -1140,7 +1140,7 @@ CREATE TABLE `cta_local_cache` (
 -- will be requested.
 --
 CREATE TABLE `cta_down_sync_request` (
-	`table_name`			TEXT NOT NULL,
+	`table_name`			VARCHAR(128) NOT NULL,
 	`req_min_version`		INTEGER DEFAULT 0,
 	`req_max_version`		INTEGER DEFAULT 0,
 	`resp_min_version`		INTEGER DEFAULT 0,
@@ -1150,6 +1150,6 @@ CREATE TABLE `cta_down_sync_request` (
 	PRIMARY KEY(table_name)
 );
 
-COMMIT;
+-- COMMIT;
 
 	

@@ -27,14 +27,13 @@ class MysqlParser {
 			}
 
 			if( !$in_comment ) {
-				$output .= $line. "\n"; // original line (not quoted)
+				$output .= $line. "\n";
 			}
 
 			if( preg_match("/\*\/$/", $line) ) {
 				$in_comment = false;
 			}
 		}
-		unset($lines);
 		return $output;
 	}
 
@@ -66,7 +65,6 @@ class MysqlParser {
 	 * return array of sql statements.
 	 */
 	function getSqlQueries($fileContent, $delimiter=';') {
-		$output = array();
 		$out1 = self::removeBlockComments($fileContent);
 		$out2 = self::removeRemarks($out1);
 		return explode($delimiter, $out2);// SQL statements

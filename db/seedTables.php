@@ -44,32 +44,32 @@
 	}
 	
 	$dirSchema =__DIR__."/schema/";
-	//-- first grab all the .sql files
-	$cmds = array();
-	if (is_dir($dirSchema)) {
+	$query_count = 0;
+	if (is_dir($dirSchema)) { // go through dir/<files>.sql
 		if($dirHandle = opendir($dirSchema)){
 			$parser = new MysqlParser;
 			while(($file = readdir($dirHandle)) !== false){
-				//-- only pull .sql files
 				if(substr(strrchr($file,'.'),1) != 'sql' || 
-					$file == '.' || $file == '..'){ continue; }
+					$file == '.' || $file == '..') 
+				{ 
+					continue; // only .sql files
+				}
 				$fileName = $dirSchema.'/'.$file;
 				echo "executing: $fileName" . PHP_EOL;
 				$sqlContent = file_get_contents($fileName);
 				if (!$sqlContent) {
 					die("Failed to read file: $fileName");
 				}
-				//-- split into individual commands
-				$sqls = $parser->getSqlQueries($sqlContent);
+				$sqls = $parser->getSqlQueries($sqlContent); // individual queries
 				foreach ($sqls as $sql) {
-					//-- trim and skip empty lines
-					$sql = trim($sql);
+					$sql = trim($sql); // skip empty lines
 					if ($sql) {
 						$return = $dbc->query($sql);
 						if (!$return) { 
 							echo "$fileName: Failed query:\n$sql\n";
 							die($dbc->getError());
 						}
+						$query_count++;
 					}
 				}
 			}
@@ -79,5 +79,5 @@
 	} else { 
 		die("Could not find schema dir: $dirSchema"); 
 	}
-	echo "\n\n Schema creation COMPLETE! !\n";
+	echo "\n\n Schema creation COMPLETE query count($query_count)!!\n";
 ?>
