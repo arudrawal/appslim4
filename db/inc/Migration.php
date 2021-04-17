@@ -2,14 +2,22 @@
 
 require_once(__DIR__.'/MysqlParser.php');
 
+
 class Migration {
 	const DATE_FROMAT = 'Y_m_d_His';
-	protected $mig_dir = __DIR__;
+	const DS = DIRECTORY_SEPARATOR;
 	protected $mysqli = null;
+	protected $mig_dir = __DIR__.self::DS.'..'.self::DS.'schema';
+	protected $mig_dir_up =__DIR__.self::DS.'..'.self::DS.'schema'.self::DS.'up';
+	protected $mig_dir_dn =__DIR__.self::DS.'..'.self::DS.'schema'.self::DS.'dn';
 	
-	function __construct($dir, $conn) {
-		$this->mig_dir = $dir;
+	function __construct($conn, $dir=null) {
 		$this->mysqli = $conn;
+		if ($dir) {
+			$this->mig_dir = $dir;
+			$this->mig_dir_up = $dir. self::DS . 'up' . self::DS;
+			$this->mig_dir_dn = $dir. self::DS .'dn' . self::DS;
+		}
 	}
     //protected function getUp
 	
@@ -22,7 +30,7 @@ class Migration {
         if (count($dateArray) >= 3) { // time: His (default: midnight)
 			$dateStr = $dateArray[0] . '_' . $dateArray[1].'_'. $dateArray[2];
 			$dateStr .= '_' . (count($dateArray) >= 4) ? $dateArray[3] : '000000';
-			$dateTimeObject = DateTime::createFromFormat($self::DATE_FROMAT, $dateStr, $tz);
+			$dateTimeObject = DateTime::createFromFormat(self::DATE_FROMAT, $dateStr, $tz);
 			if ($dateTimeObject) {
 				$timestamp = $dateTimeObject->getTimestamp();
 			}
@@ -40,7 +48,7 @@ class Migration {
         
         $mig_indexed = array();
         foreach ($mig_files as $file) {
-            $timestamp = self::getTS($file);
+            $timestamp = $this->getTS($file);
             if ($timestamp !== FALSE) {
                 $mig_indexed[$timestamp] = $file;
             }
@@ -74,38 +82,48 @@ class Migration {
     }
 	protected function exec_mig($files) {
 		foreach ($files as $file) {
-			if (!self::exec_file($file)) {
+			if (!$this->exec_file($file)) {
 				return false;
 			}
 		}
 		return true;
 	}
-	// in ascending order
+	// Indexed by mig_ID: in ascending order
 	protected function getMigsByID() {
 		$migs_applied = array();
         $cmd = 'SELECT * FROM migrations ORDER BY mig_ID ASC';
-        $result = self::mysqli->query($cmd);
+        $result = $this->musqli->query($cmd);
         if ($result == FALSE) {
             exit(0); // return up mig count;
         }
         //var_dump($result);die();
-        $ts_last_mig = 0;
-        $last_mig_id = 0;
         while ($row = $result->fetch_assoc()) {
-			$migs_applied[$row['mig_ID'] = $row;//['mig_UP_SCRIPT'];
+			$migs_applied[$row['mig_ID']] = $row;//['mig_UP_SCRIPT'];
         }
+		return $migs_applied;
+	}
+	// Indexed by TS
+	protected function getMigsByTS() {
+		$migs_applied = array();
+        $cmd = 'SELECT * FROM migrations ORDER BY mig_ID ASC';
+        $result = $this->mysqli->query($cmd);
+        if ($result) {
+			while ($row = $result->fetch_assoc()) {
+				$ts = $this->getTS($row['mig_UP_SCRIPT']);
+				$migs_applied[$ts] = $row;//['mig_UP_SCRIPT'];
+			}
+		}
 		return $migs_applied;
 	}
 	// migrate up: 0=ALL
 	public function up($count=0) {
-		$mig_up_files = self::sortedFilesIndexed($this->mig_dir . '/up');
-		$mig_dn_files = self::sortedFilesIndexed($this->mig_dir . '/dn');
-		$mig_applied = self::getMigsByID(); // indexed by mig_ID
-		$mig_applied_ts = array_keys($mig_applied);
+		$mig_up_files = $this->sortedFilesIndexed($this->mig_dir . '/up');
+		$mig_dn_files = $this->sortedFilesIndexed($this->mig_dir . '/dn');
+		$mig_applied = $this->getMigsByID(); // indexed by mig_ID
 		$ts_last_mig_applied = 0;
 		if (count($mig_applied)) {
 			$row = $mig_applied[count($mig_applied)-1];
-			$ts_last_mig_applied = self::getTS($row['mig_UP_SCRIPT']);
+			$ts_last_mig_applied = $this->getTS($row['mig_UP_SCRIPT']);
 		}
 
 		if (count($mig_applied) < count($mig_up_files)) {
@@ -119,7 +137,7 @@ class Migration {
 							return false;
 						}
 						//echo "execute: $mig_up_file \n";
-						if (!self::exec_file($mig_up_file)) {
+						if (!$this->exec_file($mig_up_file)) {
 							return false;
 						}               
 						//-- Update migration table.
@@ -128,7 +146,7 @@ class Migration {
 								" VALUES (NULL,'" . 
 								basename($mig_up_file) . "','" . 
 								basename($mig_dn_files[$file_ts]) . "')";
-						if (!self::mysqli->query($cmd)) {
+						if (!$this->mysqli->query($cmd)) {
 							return false;
 						}
 					}
@@ -139,8 +157,8 @@ class Migration {
 	}
 	// migrate down:
 	public function dn($count=1) {
-		$mig_dn_files = self::sortedFilesIndexed($this->mig_dir . '/dn');
-		$mig_applied = self::getMigsByID(); // indexed by mig_ID
+		$mig_dn_files = $this->sortedFilesIndexed($this->mig_dir . '/dn');
+		$mig_applied = $this->getMigsByID(); // indexed by mig_ID
 		$mig_applied_count = count($mig_applied);
 		if (0 == $mig_applied_count){ return true;}
 		$dn_apply = ($count > $mig_applied_count) ? $mig_applied_count : $count;
@@ -149,24 +167,73 @@ class Migration {
 		foreach ($mig_applied as $migID=>$mig_applied_row) {
 			if ($dn_apply) {
 				$dn_file = $mig_applied_row['mig_DN_SCRIPT'] . '.sql';
-				$dn_file_ts = self::getTS($dn_file);
+				$dn_file_ts = $this->getTS($dn_file);
 				if (!array_key_exist($dn_file_ts, $mig_dn_files)) {
 					echo 'Down mig not found: ' . $mig_file . PHP_EOL;
 					return false;
 				}
 				//echo "execute: $mig_dn_file \n";
-				if (!self::exec_file($mig_dn_files[$dn_file_ts])) {
+				if (!$this->exec_file($mig_dn_files[$dn_file_ts])) {
 					return false;
 				}               
 				//-- Update migration table.
 				$cmd = "DELETE FROM migrations WHERE mig_ID=$migID";
-				if (!self::mysqli->query($cmd)) {
+				if (!$this->mysqli->query($cmd)) {
 					return false;
 				}
 			}
 			$dn_apply--;
 		}
 		return true;
+	}
+	public function display_mig() {
+		$out = '';
+		$mig_up_files = $this->sortedFilesIndexed($this->mig_dir . '/up');
+		$mig_dn_files = $this->sortedFilesIndexed($this->mig_dir . '/dn');
+		$mig_applied = $this->getMigsByTS();
+		$max_fname_len_applied = 0;
+		foreach ($mig_applied as $ts => $row) {
+			$len = strlen($mig_applied_row['mig_UP_SCRIPT']);
+			$max_fname_len_applied = max($max_fname_len_applied, $len);
+		}
+		$applied_format = '%'.$max_fname_len_applied.'s';
+		foreach ($mig_applied as $ts => $row) {
+			$out .= sprintf($applied_format, $mig_applied_row['mig_UP_SCRIPT']);
+			if (array_key_exist($ts, $mig_up_files)) {
+				$out .= '<<==>>' . $mig_up_files[$ts] . '\n';
+				unset($mig_up_files[$ts]);
+			}
+		}
+		// To be applied
+		$out .= '\n\nTo be applied:';
+		foreach ($mig_up_files as $ts => $filename) {
+			$out .= sprintf($applied_format, $filename);
+		}
+		return $out;
+	}
+	public function createMigfiles($append) {
+        $mig_fname = gmdate(self::DATE_FROMAT, time());
+		if (strlen(trim($append))) {$mig_fname .= '_'. $append;}
+		$mig_fname .= '.sql';
+		
+        $mig_fname_up = $this->mig_dir_up . $mig_fname;
+        $mig_fname_dn = $this->mig_dir_dn . $mig_fname;
+
+		$fd_up = fopen($mig_fname_up, "w");
+        if (!$fd_up) {return false;}
+        fwrite($fd_up, "-- Up migration sql\n");
+		fwrite($fd_up, "BEGIN TRANSACTION;\n\n\n");
+		fwrite($fd_up, "COMMIT;\n");
+        fclose($fd_up);
+		
+		$fd_dn = fopen($mig_fname_dn, "w");
+        if (!$fd_dn) {return false;}
+        fwrite($fd_dn, "-- Dn migration sql\n");
+		fwrite($fd_dn, "BEGIN TRANSACTION;\n\n\n");
+		fwrite($fd_dn, "COMMIT;\n");
+        fclose($fd_dn);
+		
+		return $mig_fname;
 	}
 }
 ?>
