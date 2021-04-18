@@ -25,11 +25,12 @@ class Migration {
 	//-- $script_name: 2016_06_12_170149_event_log.sql
     protected function getTS($script_name) {
         $timestamp = FALSE;
-		$tz = new DateTimeZone("UTC");//::UTC;       
-        $dateArray = explode('_', basename($script_name));
+		$tz = new DateTimeZone("UTC");//::UTC;  
+		$path_parts = pathinfo($script_name);
+        $dateArray = explode('_', $path_parts['basename']);
         if (count($dateArray) >= 3) { // time: His (default: midnight)
-			$dateStr = $dateArray[0] . '_' . $dateArray[1].'_'. $dateArray[2];
-			$dateStr .= '_' . (count($dateArray) >= 4) ? $dateArray[3] : '000000';
+			$dateStr = $dateArray[0] . '_' . $dateArray[1].'_'. $dateArray[2] . '_';
+			$dateStr .= ((count($dateArray) >= 4) ? $dateArray[3] : '000000');
 			$dateTimeObject = DateTime::createFromFormat(self::DATE_FROMAT, $dateStr, $tz);
 			if ($dateTimeObject) {
 				$timestamp = $dateTimeObject->getTimestamp();
@@ -44,13 +45,12 @@ class Migration {
     //-- mig_up=1 -> up migration else down 
     function sortedFilesIndexed($mig_dir) {
         // Prepare a sorted list of up and down migrations scripts.
-        $mig_files = glob($mig_dir.'/*.{sql}', GLOB_BRACE);
-        
+        $mig_files = glob($mig_dir.'*.{sql}', GLOB_BRACE);
         $mig_indexed = array();
-        foreach ($mig_files as $file) {
-            $timestamp = $this->getTS($file);
-            if ($timestamp !== FALSE) {
-                $mig_indexed[$timestamp] = $file;
+        foreach ($mig_files as $idx=>$filename) {
+            $timestamp = $this->getTS($filename);
+            if ($timestamp) {
+                $mig_indexed[$timestamp] = $filename;
             }
         }
 		asort($mig_indexed, SORT_NUMERIC);
@@ -62,15 +62,16 @@ class Migration {
         if (file_exists($src_file)) {
             $info = pathinfo($src_file);
             if ($info["extension"] == "sql") {
+				$sqlContent = file_get_contents($src_file);
 				$parser = new MySqlparser;
 				$sqls = $parser->getSqlQueries($sqlContent); // individual queries
 				foreach ($sqls as $sql) {
 					$sql = trim($sql); // skip empty lines
 					if ($sql) {
-						$return = $this->mysqli->query($sql);
-						if (!$return) { 
+						$ret = $this->mysqli->query($sql);
+						if (!$ret) {
 							echo "$src_file: Failed query:\n$sql\n";
-							echo $this->mysqli->getError() . PHP_EOL;
+							echo $this->mysqli->error . PHP_EOL;
 							return FALSE;
 						}
 					}
@@ -93,13 +94,12 @@ class Migration {
 		$migs_applied = array();
         $cmd = 'SELECT * FROM migrations ORDER BY mig_ID ASC';
         $result = $this->mysqli->query($cmd);
-        if ($result == FALSE) {
-            exit(0); // return up mig count;
-        }
-        //var_dump($result);die();
-        while ($row = $result->fetch_assoc()) {
-			$migs_applied[$row['mig_ID']] = $row;//['mig_UP_SCRIPT'];
-        }
+        if ($result) {
+			//var_dump($result);die();
+			while ($row = $result->fetch_assoc()) {
+				$migs_applied[$row['mig_ID']] = $row;//['mig_UP_SCRIPT'];
+			}
+		}
 		return $migs_applied;
 	}
 	// Indexed by TS
@@ -120,14 +120,12 @@ class Migration {
 		$mig_up_files = $this->sortedFilesIndexed($this->mig_dir_up);
 		$mig_dn_files = $this->sortedFilesIndexed($this->mig_dir_dn);
 		$mig_applied = $this->getMigsByID(); // indexed by mig_ID
+		
 		$ts_last_mig_applied = 0;
 		if (count($mig_applied)) {
-			$row = $mig_applied[count($mig_applied)-1];
+			$row = $mig_applied[array_key_last($mig_applied)];
 			$ts_last_mig_applied = $this->getTS($row['mig_UP_SCRIPT']);
 		}
-		var_dump($mig_up_files);
-		die();
-
 		$retval = true;
 		if (count($mig_applied) < count($mig_up_files)) {
 			$up_count = 0;
@@ -167,7 +165,7 @@ class Migration {
 	}
 	// migrate down:
 	public function dn($count=1) {
-		$mig_dn_files = $this->sortedFilesIndexed($this->mig_dir . '/dn');
+		$mig_dn_files = $this->sortedFilesIndexed($this->mig_dir_dn);
 		$mig_applied = $this->getMigsByID(); // indexed by mig_ID
 		$mig_applied_count = count($mig_applied);
 		if (0 == $mig_applied_count){ return true;}
@@ -176,9 +174,9 @@ class Migration {
 		arsort($mig_applied, SORT_NUMERIC); // reverse
 		foreach ($mig_applied as $migID=>$mig_applied_row) {
 			if ($dn_apply) {
-				$dn_file = $mig_applied_row['mig_DN_SCRIPT'] . '.sql';
+				$dn_file = $mig_applied_row['mig_DN_SCRIPT'];
 				$dn_file_ts = $this->getTS($dn_file);
-				if (!array_key_exist($dn_file_ts, $mig_dn_files)) {
+				if (!array_key_exists($dn_file_ts, $mig_dn_files)) {
 					echo 'Down mig not found: ' . $mig_file . PHP_EOL;
 					return false;
 				}
