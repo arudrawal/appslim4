@@ -52,6 +52,7 @@
     $USAGE = "USAGE: " . basename(__FILE__) . 
             ' [-i|-c|-u <n>|-d <n>] [name-migration]';
 	$mig = new Migration($mysqli, $script_path);
+	
 	if (sizeof($argv) < 2) {
 		$mig->display_mig();
 		return;
@@ -65,5 +66,13 @@
 			echo 'Failed to create migration files' . PHP_EOL;
 		}
 		return;
+	} else if ($argv[1] == '-u') {
+		$up_count = isset($argv[2]) ? $argv[2] : 0;
+		$mig->up($up_count);
+	} else if ($argv[1] == '-d') {
+		$dn_count = isset($argv[2]) ? $argv[2] : 1;
+		$mig->dn($dn_count);
+	} else if ($argv[1] == '-i') {
+		$mig->createMigTable();
 	}
 ?>

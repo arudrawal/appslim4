@@ -92,7 +92,7 @@ class Migration {
 	protected function getMigsByID() {
 		$migs_applied = array();
         $cmd = 'SELECT * FROM migrations ORDER BY mig_ID ASC';
-        $result = $this->musqli->query($cmd);
+        $result = $this->mysqli->query($cmd);
         if ($result == FALSE) {
             exit(0); // return up mig count;
         }
@@ -117,15 +117,18 @@ class Migration {
 	}
 	// migrate up: 0=ALL
 	public function up($count=0) {
-		$mig_up_files = $this->sortedFilesIndexed($this->mig_dir . '/up');
-		$mig_dn_files = $this->sortedFilesIndexed($this->mig_dir . '/dn');
+		$mig_up_files = $this->sortedFilesIndexed($this->mig_dir_up);
+		$mig_dn_files = $this->sortedFilesIndexed($this->mig_dir_dn);
 		$mig_applied = $this->getMigsByID(); // indexed by mig_ID
 		$ts_last_mig_applied = 0;
 		if (count($mig_applied)) {
 			$row = $mig_applied[count($mig_applied)-1];
 			$ts_last_mig_applied = $this->getTS($row['mig_UP_SCRIPT']);
 		}
+		var_dump($mig_up_files);
+		die();
 
+		$retval = true;
 		if (count($mig_applied) < count($mig_up_files)) {
 			$up_count = 0;
 			foreach ($mig_up_files as $file_ts=>$mig_up_file) {
@@ -134,11 +137,13 @@ class Migration {
 						$up_count < $count) { // fix number of ups
 						if (!array_key_exists($file_ts, $mig_dn_files)) {
 							echo 'Down mig not found for: ' . $mig_file . PHP_EOL;
-							return false;
+							$retval = false;
+							break;
 						}
 						//echo "execute: $mig_up_file \n";
 						if (!$this->exec_file($mig_up_file)) {
-							return false;
+							$retval = false;
+							break;
 						}               
 						//-- Update migration table.
 						$cmd = "INSERT INTO migrations ".
@@ -147,13 +152,18 @@ class Migration {
 								basename($mig_up_file) . "','" . 
 								basename($mig_dn_files[$file_ts]) . "')";
 						if (!$this->mysqli->query($cmd)) {
-							return false;
+							$retval = false;
+							break;
 						}
 					}
 				}
 				$up_count++;
 			}
 		}
+		if (!$retval) { // perform rollback
+		
+		}
+		return $retval;
 	}
 	// migrate down:
 	public function dn($count=1) {
@@ -163,7 +173,7 @@ class Migration {
 		if (0 == $mig_applied_count){ return true;}
 		$dn_apply = ($count > $mig_applied_count) ? $mig_applied_count : $count;
 		
-		arsort($mig_dn_files, SORT_NUMERIC); // reverse
+		arsort($mig_applied, SORT_NUMERIC); // reverse
 		foreach ($mig_applied as $migID=>$mig_applied_row) {
 			if ($dn_apply) {
 				$dn_file = $mig_applied_row['mig_DN_SCRIPT'] . '.sql';
@@ -210,6 +220,15 @@ class Migration {
 			$out .= sprintf($applied_format, $filename);
 		}
 		return $out;
+	}
+	
+	public function createMigTable() {
+		$cmd = 'CREATE TABLE IF NOT EXISTS `migrations` ('.
+			'`mig_ID` int(10) unsigned NOT NULL AUTO_INCREMENT,'.
+			'`mig_UP_SCRIPT` varchar(256) NOT NULL DEFAULT \'\','.
+			'`mig_DN_SCRIPT` varchar(256) NOT NULL DEFAULT \'\','.
+			'PRIMARY KEY (`mig_ID`));';
+		return $this->mysqli->query($cmd);
 	}
 	public function createMigfiles($append) {
         $mig_fname = gmdate(self::DATE_FROMAT, time());
