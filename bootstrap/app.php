@@ -17,7 +17,7 @@ $container = new Container();
 $server = "localhost";
 $user = "root";
 $password = "";
-$dbname = "mydb";
+$dbname = "hrfh";
 // Database connection PDO
 $dsn = "mysql:host=$server;dbname=$dbname;charset=utf8mb4";
 $pdo_flags = [
@@ -54,8 +54,9 @@ $container->set('view', function(){
 $app = AppFactory::create();
 $app->add(TwigMiddleware::createFromContainer($app));
 
-$app->addRoutingMiddleware();
 $errorMiddleware = $app->addErrorMiddleware(true, true, true);
+$routeMiddleWare = $app->addRoutingMiddleware();
+
 
 # Routes
 require "../app/routes.php";

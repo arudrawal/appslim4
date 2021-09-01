@@ -10,7 +10,13 @@ class HomeController extends Controller {
 	public function __construct(Container $cont) {
 		parent::__construct($cont);
 	}	
-	
+	public function root(Request $request, Response $response, $args): Response
+	{
+		$version = $this->pdo->query('select VERSION()')->fetch();
+		$response->getBody()->write('Hello World!');
+		$response->getBody()->write(json_encode($version));
+		return $response;
+	}
 	public function hello(Request $request, Response $response, $args): Response
 	{
 		$version = $this->pdo->query('select VERSION()')->fetch();
